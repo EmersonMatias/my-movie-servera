@@ -1,4 +1,5 @@
 import { connection } from "../database/db.js"
+import jwt from "jsonwebtoken"
 
 export async function registerUser(req, res){
     const {name, email, password} = req.user
@@ -14,4 +15,12 @@ export async function registerUser(req, res){
         console.log(error)
     }
    
+}
+
+export async function connectingUser(req,res){
+    const user = req.user
+
+    const acessToken = jwt.sign(user, process.env.ACESS_TOKEN_SECRET, {expiresIn: '24h'})
+
+    res.send({name: user.name, token: acessToken})
 }

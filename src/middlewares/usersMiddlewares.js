@@ -1,8 +1,8 @@
-import { hashSync } from "bcrypt"
+import { compareSync, hashSync } from "bcrypt"
 import { connection } from "../database/db.js"
 import { userSchema } from "../models/usersModels.js"
 
-export default async function validateSignup(req,res,next){
+export async function validateSignup(req,res,next){
     const {name, email, password, confirmPassword} = req.body
 
 
@@ -36,5 +36,37 @@ export default async function validateSignup(req,res,next){
     const encryptedPassword = hashSync(password, 10)
     req.user = {name, email: email.toLowerCase(), password: encryptedPassword}
   
+    next()
+}
+
+export async function validateSignin(req, res, next){
+    const {email, password} = req.body
+    let userExist
+
+
+    if(!email  || password.length < 8){
+        return res.sendStatus(401)
+    }
+
+    //Verificando se usuário possui cadastro
+    try{
+        userExist = await (await connection.query(`SELECT * FROM users WHERE email=($1)`,[email.toLowerCase()])).rows[0]
+        console.log(userExist)
+
+        if(!userExist){
+            return res.sendStatus(404)
+        }
+    }catch(error){
+        console.log(error)
+    }
+
+    const validatePassword = compareSync(password, userExist.password)
+
+    if(!validatePassword){
+        return res.sendStatus(401)
+    }
+
+    req.user = {name: userExist.name, email: userExist.email}
+
     next()
 }
